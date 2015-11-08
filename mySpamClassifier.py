@@ -61,15 +61,15 @@ class mySpamClassifier:
 
 
         def train(self): #trains the classifier by calculating probabilities
-                self.spam_count = 0
-                self.ham_count = 0
+                self.total_spam_docs = 0
+                self.total_ham_docs = 0
                 for doc in self.trainDocs:
                         if doc[1] == "spam":
-                                self.spam_count += 1
+                                self.total_spam_docs += 1
                         else:
-                                self.ham_count += 1
-                s_prob = float(spam_count) / len(self.trainDocs)
-                h_prob = float(ham_count) / len(self.trainDocs)
+                                self.total_ham_docs += 1
+                self.s_prob = float(self.total_spam_docs) / len(self.trainDocs)
+                self.h_prob = float(self.total_ham_docs) / len(self.trainDocs)
                 print("Spam Probability: %s: " % s_prob)
                 print("Ham Probability: %s: " % h_prob)
 
@@ -91,30 +91,34 @@ class mySpamClassifier:
                                                 self.ham_dict[fword] += 1
                         self.prob_s_word = spam_dict[fword] / s_count
                         self.prob_h_word = ham_dict[fword] / h_count
-
-                print(self.prob_s_word)
-                print(self.prob_h_word)
+                        print(self.prob_s_word)
+                        print(self.prob_h_word)
                                 
         def classify (self): #labels test docs as spam or ham based on feature probs.
                 self.classifiedList = [] #list where docs are labeled
                 self.pro
 
-                for doc in self.trainDocs:
-                        for fword in word_features:
+                # for doc in self.trainDocs:
+                #         for fword in word_features:
                                 
-                                if fword in doc:
-                                        s_prob = self.prob_s_word[fword] / self.prob_s_word.len
-                                        h_prob = self.prob_h_word[fword] / self.prob_h_word.len
-                                                
+                #                 if fword in doc:
+                #                         word_s_prob = self.prob_s_word[fword] / self.prob_s_word.len
+                #                         word_h_prob = self.prob_h_word[fword] / self.prob_h_word.len
 
-                                                
-                                        self.classifiedList.append((doc, "spam"))
-                                        self.classifiedList.append((doc, "ham"))
+                                
+                                        
+                #         if word_s_prob > word_h_prob:
+                #                 self.classifiedList.append((doc, "spam"))
+                #         else:
+                #                 self.classifiedList.append((doc, "ham"))
                 
                 return self.classifiedList
 
         def accuracy (self): #calculates percent of docs that were correctly classified
                 result = 0
+
+                for 
+                
                 return result
 
 if __name__ == '__main__':
