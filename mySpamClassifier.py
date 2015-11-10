@@ -12,6 +12,7 @@
 import nltk
 import os
 import random
+import time
 from nltk.corpus import stopwords
 stopwords = nltk.corpus.stopwords.words('english') #all non-descriptive English words  
 class mySpamClassifier:
@@ -22,8 +23,12 @@ class mySpamClassifier:
                 self.spamFiles = os.listdir(spamFolder)
                 self.totalHamFile = []
                 self.hamFiles = os.listdir(hamFolder)
-                self.spam_dict = {}
-                self.ham_dict = {}
+                self.spam_prob = {}
+                self.ham_prob = {}
+
+                # message
+                print("Begin parsing files...")
+                start = time.process_time()
                 
                 for docs in self.spamFiles:
                         textFile = open(spamFolder + "/" + docs, "r", encoding='ISO-8859-1')
@@ -59,10 +64,19 @@ class mySpamClassifier:
                 self.all_words = nltk.FreqDist(w for w in self.totalWords if w.isalpha())#lists frequency of all words
                 self.word_features = list(self.all_words)[:2000] #lists top 2000 most frequent words
 
+                elapsed = time.process_time() - start
+                print("Parsing done in %6.4f seconds!\n" % elapsed)
+                
 
         def train(self): #trains the classifier by calculating probabilities
                 self.total_spam_docs = 0
                 self.total_ham_docs = 0
+
+                # message
+                print("Begin training...")
+                start = time.process_time()
+                
+                # prob of doc being spam
                 for doc in self.trainDocs:
                         if doc[1] == "spam":
                                 self.total_spam_docs += 1
@@ -70,58 +84,78 @@ class mySpamClassifier:
                                 self.total_ham_docs += 1
                 self.s_prob = float(self.total_spam_docs) / len(self.trainDocs)
                 self.h_prob = float(self.total_ham_docs) / len(self.trainDocs)
-                print("Spam Probability: %s: " % s_prob)
-                print("Ham Probability: %s: " % h_prob)
+                print("Probability doc is spam: %4.2f%%: " % (self.s_prob * 100))
+                print("Probability doc is ham: %4.2f%%: " % (self.h_prob * 100))
 
-                print("Word count: %s" % len(self.word_features))
-
-                s_count = 0
-                h_count = 0
-                epsilon = 1 / (len(self.trainDocs) - 1)
+                # prob of word being spam 
+                eps = 1 / (len(self.trainDocs) + 1)
                 for fword in self.word_features:
-                        self.spam_dict.setdefault(fword, epsilon)
-                        self.ham_dict.setdefault(fword, epsilon)
+                        s_count = eps
+                        h_count = eps
+                        # default word prob to eps
+                        self.spam_prob.setdefault(fword, eps)
+                        self.ham_prob.setdefault(fword, eps)
+                        # count words in spam and ham
                         for doc in self.trainDocs:
                                 if fword in doc[0]:
                                         if doc[1] == "spam":
                                                 s_count += 1
-                                                self.spam_dict[fword] += 1
                                         else:
                                                 h_count += 1
-                                                self.ham_dict[fword] += 1
-                        self.prob_s_word = spam_dict[fword] / s_count
-                        self.prob_h_word = ham_dict[fword] / h_count
-                        print(self.prob_s_word)
-                        print(self.prob_h_word)
+                        # set probability if not zero
+                        if s_count != 0:
+                                self.spam_prob[fword] = float(s_count) / self.total_spam_docs
+                        if h_count != 0:
+                                self.ham_prob[fword] = float(h_count) / self.total_ham_docs
+
+                #print(self.spam_prob)
+                elapsed = time.process_time() - start
+                print("Training done in %6.4f seconds!\n" % elapsed)
+
                                 
         def classify (self): #labels test docs as spam or ham based on feature probs.
                 self.classifiedList = [] #list where docs are labeled
-                self.pro
 
-                # for doc in self.trainDocs:
-                #         for fword in word_features:
-                                
-                #                 if fword in doc:
-                #                         word_s_prob = self.prob_s_word[fword] / self.prob_s_word.len
-                #                         word_h_prob = self.prob_h_word[fword] / self.prob_h_word.len
-
-                                
-                                        
-                #         if word_s_prob > word_h_prob:
-                #                 self.classifiedList.append((doc, "spam"))
-                #         else:
-                #                 self.classifiedList.append((doc, "ham"))
+                print("Begin classification...")
+                start = time.process_time()
                 
+                # for all the documents
+                for doc in self.testDocs:
+                        # multiply the prob of the doc and each spam/ham word
+                        total_s_prob = self.s_prob
+                        total_h_prob = self.h_prob
+                        for word in doc[0]:
+                                if word in self.word_features:
+                                        total_s_prob *= self.spam_prob[word]
+                                        total_h_prob *= self.ham_prob[word]
+                        if total_s_prob > total_h_prob:
+                                self.classifiedList.append((doc[0], "spam"))
+                        else:
+                                self.classifiedList.append((doc[0], "ham"))
+
+                elapsed = time.process_time() - start
+                print("Classification done in %6.4f seconds!\n" % elapsed)
+
                 return self.classifiedList
 
         def accuracy (self): #calculates percent of docs that were correctly classified
                 result = 0
 
-                for 
+                # count docs classified correctly
+                i = 0
+                for doc in self.testDocs:
+                        if self.classifiedList[i][1] == doc[1]:
+                                result += 1
+                        i += 1
+
+                # divide by total
+                result /= len(self.testDocs)
                 
                 return result
 
 if __name__ == '__main__':
         c = mySpamClassifier("spam", "ham")
         c.train()
-        print("You don't want spam 'cause it's not ham.")
+        c.classify()
+        accuracy = c.accuracy() * 100
+        print("Documents correctly classified: %4.2f%%" % accuracy)
